@@ -1,0 +1,32 @@
+{
+  "name": "wheel-clock",
+  "version": "1.0.0",
+  "description": "An optimized wheel-based clock and countdown timer library",
+  "main": "dist/wheel-clock.js",
+  "module": "dist/wheel-clock.js",
+  "types": "dist/wheel-clock.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "npx tsc",
+    "dev": "npx tsc --watch",
+    "serve": "python3 -m http.server 8000"
+  },
+  "files": [
+    "dist/**/*",
+    "wheel-clock.css",
+    "index.html"
+  ],
+  "keywords": [
+    "clock",
+    "countdown",
+    "timer",
+    "wheel",
+    "animation",
+    "typescript"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "typescript": "^5.9.2"
+  }
+}

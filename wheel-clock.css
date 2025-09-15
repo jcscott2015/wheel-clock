@@ -1,0 +1,275 @@
+/* CSS Custom Properties for easy theming and maintenance */
+:root {
+  /* Sizing */
+  --wheel-height: 1.25em;
+  --wheel-width: 0.75em;
+  --wheel-gap: 1rem;
+  --container-gap: 1rem;
+  --clock-margin: 20px;
+
+  /* Typography */
+  --wheel-font-size: 9vw;
+  --slot-font-size: 2vw;
+  --font-family: Arial, sans-serif;
+
+  /* Colors */
+  --wheel-bg: #444;
+  --wheel-text: #fff;
+  --body-bg: #eee;
+
+  /* Effects */
+  --wheel-border-radius: 6px;
+  --wheel-shadow: none; /* 0 4px 8px rgba(0, 0, 0, 0.3) */
+  --perspective: 400px;
+
+  /* Animation */
+  --animation-duration: 600ms;
+  --animation-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Base styles with performance optimizations */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  block-size: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-block-size: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--body-bg);
+  font-family: var(--font-family);
+  margin: 0;
+}
+
+/* Clock container */
+.wheel-clock {
+  text-align: center;
+  perspective: var(--perspective);
+  margin: var(--clock-margin) auto;
+  will-change: transform;
+  contain: layout style paint;
+}
+
+.wheel-clock *,
+.wheel-clock *::before,
+.wheel-clock *::after {
+  box-sizing: border-box;
+}
+
+.wheel-clock__container {
+  display: inline-block;
+  margin: 0 var(--container-gap);
+  transform: translateZ(0);
+}
+
+.wheel-clock__pair {
+  display: flex;
+  gap: var(--wheel-gap);
+  align-items: stretch;
+}
+
+.wheel-clock__slot {
+  text-align: center;
+  margin-block-start: 0.5em;
+  text-rendering: optimizeLegibility;
+  font-size: clamp(12px, var(--slot-font-size), 24px);
+}
+
+/* Wheel styling */
+.wheel-clock__wheel {
+  position: relative;
+  inline-size: var(--wheel-width);
+  block-size: var(--wheel-height);
+  line-height: 1;
+  background: var(--wheel-bg);
+  border-radius: var(--wheel-border-radius);
+  overflow: hidden;
+  box-shadow: var(--wheel-shadow);
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  font-size: clamp(40px, var(--wheel-font-size), 120px);
+}
+
+.wheel-clock__wheel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.09),
+    rgba(255, 255, 255, 0.15) 6%,
+    rgba(255, 255, 255, 0.09) 49%,
+    rgba(0, 0, 0, 0.09) 51%,
+    rgba(0, 0, 0, 0.15) 90%,
+    rgba(0, 0, 0, 0.2)
+  );
+}
+
+/* Number wheel base styles */
+.wheel-clock__number-wheel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--wheel-text);
+  will-change: transform;
+  transform: translateZ(0);
+  font-size: 1em;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  text-rendering: optimizeSpeed;
+}
+
+/* Pseudo-elements for number display */
+.wheel-clock__number-wheel::after,
+.wheel-clock__number-wheel::before {
+  position: absolute;
+  inset: 0 0 auto;
+  block-size: var(--wheel-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wheel-clock__number-wheel::after {
+  content: attr(data-value);
+  z-index: 2;
+}
+
+.wheel-clock__number-wheel::before {
+  content: "";
+  z-index: 1;
+  opacity: 0;
+}
+
+/* Animation states */
+.wheel-clock__number-wheel.wheel-increasing::after {
+  animation: slideUpCurrent var(--animation-duration) var(--animation-easing)
+    forwards;
+}
+
+.wheel-clock__number-wheel.wheel-increasing::before {
+  content: attr(data-previous);
+  opacity: 1;
+  animation: slideUpPrevious var(--animation-duration) var(--animation-easing)
+    forwards;
+}
+
+.wheel-clock__number-wheel.wheel-decreasing::after {
+  animation: slideDownCurrent var(--animation-duration) var(--animation-easing)
+    forwards;
+}
+
+.wheel-clock__number-wheel.wheel-decreasing::before {
+  content: attr(data-previous);
+  opacity: 1;
+  animation: slideDownNext var(--animation-duration) var(--animation-easing)
+    forwards;
+}
+
+@keyframes slideUpCurrent {
+  from {
+    transform: translateY(var(--wheel-height));
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUpPrevious {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(calc(-1 * var(--wheel-height)));
+    opacity: 0;
+  }
+}
+
+@keyframes slideDownCurrent {
+  from {
+    transform: translateY(calc(-1 * var(--wheel-height)));
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDownNext {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(var(--wheel-height));
+    opacity: 0;
+  }
+}
+
+/* Media queries for accessibility and responsiveness */
+@media (prefers-reduced-motion: reduce) {
+  .wheel-clock__number-wheel,
+  .wheel-clock__number-wheel::before,
+  .wheel-clock__number-wheel::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (prefers-contrast: high) {
+  :root {
+    --wheel-bg: #000;
+    --wheel-text: #fff;
+    --wheel-shadow: 0 4px 8px rgba(255, 255, 255, 0.3);
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --wheel-gap: 0.5rem;
+    --container-gap: 0.6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --wheel-gap: 0.4rem;
+    --container-gap: 0.5rem;
+  }
+}
+
+@media print {
+  .wheel-clock {
+    color: black;
+    background: white;
+  }
+
+  .wheel-clock__wheel {
+    background: white;
+    border: 1px solid black;
+    box-shadow: none;
+  }
+
+  .wheel-clock__number-wheel {
+    color: black;
+  }
+}
