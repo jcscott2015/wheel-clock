@@ -18,6 +18,7 @@
     const countdown = new Clock({
       countdown: deadline.toString(),
       callback: () => alert("Countdown complete!"),
+      showSeconds: true,
     });
     document.body.appendChild(countdown.el);
 

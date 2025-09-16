@@ -1,6 +1,6 @@
 # Wheel Clock
 
-A high-performance, modern wheel-based clock and countdown timer library built with TypeScript. Features unlimited number support, optimized rollover animations, data-attribute driven display, and comprehensive accessibility support.
+A high-performance, modern wheel-based clock and countdown timer library built with TypeScript. Features unlimited number support, enhanced timeout management, options-based constructors, optimized rollover animations, and comprehensive accessibility support with advanced memory management.
 
 ## Features
 
@@ -8,13 +8,14 @@ A high-performance, modern wheel-based clock and countdown timer library built w
 - ⚡ **Smart Rollover Animations**: Intelligent bidirectional detection for natural transitions (9→0, 59→00, 0→59 countdown)
 - 🎯 **Multiple Display Modes**: Real-time clock, countdown timer, 12/24-hour formats
 - 🔄 **Countdown Optimized**: Proper backward animations for countdown scenarios (0→59, 0→23)
-- 🏗️ **Simplified Data Architecture**: Single `data-value` attribute system for clean DOM manipulation
-- 🎨 **Enhanced Visual Design**: Smooth multi-stop gradients for realistic 3D wheel depth effect
-- 🚀 **Performance Optimized**: Object-based trackers, efficient memory management, and 60fps animations
+- 🏗️ **Enhanced Architecture**: Options-based constructors with comprehensive TypeScript interfaces
+- 🎨 **Enhanced Visual Design**: Theme-aware gradients with CSS custom properties and utility classes for easy customization
+- 🚀 **Performance Optimized**: Advanced timeout management with `Map<HTMLElement, number>` tracking
 - ♿ **Accessibility First**: `prefers-reduced-motion`, screen reader support, and high contrast compatibility
-- 📦 **TypeScript Native**: Full type definitions with modern ES module architecture
-- 🧹 **Memory Safe**: Proper cleanup methods and timeout management
-- 🌐 **Production Ready**: Robust error handling with NaN safety checks
+- 📦 **TypeScript Native**: Full type definitions with detailed JSDoc documentation
+- 🧹 **Memory Safe**: Comprehensive cleanup methods with animation timeout management
+- 🌐 **Production Ready**: Robust error handling with NaN safety checks and global exports
+- 🔧 **Developer Experience**: Enhanced interfaces, better error messages, and improved debugging support
 
 ## Installation
 
@@ -87,9 +88,18 @@ document.body.appendChild(simpleClock.el);
 ```typescript
 import { CountdownTracker } from "wheel-clock";
 
-// Create individual time unit wheels
-const hoursWheel = new CountdownTracker("Hours", 12);
-const minutesWheel = new CountdownTracker("Minutes", 30);
+// Create individual time unit wheels with enhanced options
+const hoursWheel = new CountdownTracker({
+  label: "Hours",
+  value: 12,
+  type: "clock",
+});
+
+const minutesWheel = new CountdownTracker({
+  label: "Minutes",
+  value: 30,
+  type: "countdown",
+});
 
 document.body.appendChild(hoursWheel.el);
 document.body.appendChild(minutesWheel.el);
@@ -98,7 +108,7 @@ document.body.appendChild(minutesWheel.el);
 hoursWheel.update(13);
 minutesWheel.update(45);
 
-// Clean up when done
+// Clean up when done (includes timeout cleanup)
 hoursWheel.destroy();
 minutesWheel.destroy();
 ```
@@ -138,10 +148,17 @@ interface SlotLabels {
 
 ```typescript
 class CountdownTracker {
-  constructor(label: TimeUnit, value: string | number);
+  constructor(options: CountdownTrackerOptions);
   readonly el: HTMLElement; // Wheel DOM element
   update(value: number): void; // Update wheel value with animation
-  destroy(): void; // Clean up resources
+  destroy(): void; // Clean up resources and animation timeouts
+}
+
+interface CountdownTrackerOptions {
+  label: TimeUnit;
+  value: string | number;
+  slotLabels?: SlotLabels;
+  type: "clock" | "countdown";
 }
 
 type TimeUnit = "Seconds" | "Minutes" | "Hours" | "Days";
@@ -191,50 +208,103 @@ wheel-clock/
 
 ### Architecture Overview
 
-The library uses a simplified data-attribute driven architecture:
+The library uses an enhanced data-attribute driven architecture with improved memory management and optimized CSS:
 
+- **Options-Based Constructors**: Enhanced `CountdownTrackerOptions` interface for better TypeScript integration
+- **Advanced Timeout Management**: `Map<HTMLElement, number>` system for precise animation timeout tracking
 - **Single Data Attribute**: Numbers are displayed using `content: attr(data-value)` in CSS
-- **Object-Based Trackers**: Efficient Record<string, CountdownTracker> structure instead of Map
+- **Object-Based Trackers**: Efficient `Record<string, CountdownTracker>` structure for performance
 - **Smart Rollover Detection**: Enhanced bidirectional logic for time unit cycling (59→0, 0→59, 23→0, 0→23)
-- **Countdown Animation Logic**: Proper backward animations for countdown scenarios with time unit cycling
-- **Hardware Acceleration**: All animations use `transform: translateZ(0)` for GPU acceleration
-- **NaN Safety**: Comprehensive error handling prevents display issues
-- **Unlimited Numbers**: No constraints - handles any value from Date objects
+- **Countdown Animation Logic**: Proper backward animations for countdown scenarios with intelligent direction detection
+- **Hardware Acceleration**: All animations use `translate3d()` transforms for optimal GPU acceleration
+- **CSS Containment**: Strategic use of `contain: layout style paint` for isolated rendering
+- **Theme-Aware Styling**: CSS custom properties enable automatic dark/light mode adaptation
+- **Comprehensive Error Handling**: NaN safety with detailed validation and fallback mechanisms
+- **Enhanced Memory Safety**: Individual timeout cleanup per wheel element prevents memory leaks
+- **Type-Safe Exports**: Full TypeScript support with both value and type exports
+- **Global Compatibility**: Automatic global registration for browser environments
 
 ## Styling & Customization
 
 ### CSS Custom Properties
 
-The library uses modern CSS custom properties for easy theming:
+The library uses modern CSS custom properties organized by category for easy theming:
 
 ```css
 :root {
-  /* Sizing */
-  --wheel-height: 1.44em;
-  --wheel-width: 0.85em;
-  --wheel-gap: 2px;
-  --container-gap: 5px;
+  /* Layout & Spacing */
+  --wheel-height: 1.25em;
+  --wheel-width: 0.75em;
+  --wheel-gap: 1rem;
+  --container-gap: 1rem;
   --clock-margin: 20px;
+  --wheel-border-radius: 6px;
+  --perspective: 400px;
 
   /* Typography */
   --wheel-font-size: 9vw;
   --slot-font-size: 2vw;
-  --font-family: Arial, Helvetica, sans-serif;
+  --font-family: "Arial", sans-serif;
+  --text-font-weight: 400;
+  --wheel-font-weight: 400;
+  --line-height-base: 1;
+  --letter-spacing: -0.01em;
 
   /* Colors */
-  --wheel-bg: #222;
+  --wheel-bg: #444;
   --wheel-text: #fff;
   --body-bg: #eee;
+  --wheel-border: transparent;
+  --gradient-highlight: rgba(255, 255, 255, 0.15);
+  --gradient-shadow: rgba(0, 0, 0, 0.2);
 
-  /* Effects */
-  --wheel-border-radius: 0.15em;
+  /* Effects & Shadows */
   --wheel-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  --perspective: 400px;
+  --wheel-shadow-inset: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  --transition-base: 0.2s ease-out;
 
   /* Animation */
   --animation-duration: 600ms;
   --animation-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --animation-delay: 0ms;
+
+  /* Responsiveness */
+  --font-min: 40px;
+  --font-max: 120px;
+  --slot-font-min: 12px;
+  --slot-font-max: 24px;
 }
+```
+
+### Theme Customization
+
+The library now supports easy theme switching with utility classes:
+
+```html
+<!-- Default theme -->
+<div class="wheel-clock" id="clock1"></div>
+
+<!-- Dark theme -->
+<div class="wheel-clock wheel-clock--dark" id="clock2"></div>
+
+<!-- Light theme -->
+<div class="wheel-clock wheel-clock--light" id="clock3"></div>
+```
+
+You can also programmatically switch themes:
+
+```javascript
+const clock = document.querySelector(".wheel-clock");
+
+// Switch to dark theme
+clock.classList.add("wheel-clock--dark");
+
+// Switch to light theme
+clock.classList.remove("wheel-clock--dark");
+clock.classList.add("wheel-clock--light");
+
+// Reset to default theme
+clock.classList.remove("wheel-clock--dark", "wheel-clock--light");
 ```
 
 ### CSS Classes
@@ -247,52 +317,103 @@ The library uses modern CSS custom properties for easy theming:
 .wheel-clock__number-wheel; /* Scrolling number container */
 .wheel-clock__number-wheel-number; /* Individual number element */
 .wheel-clock__slot; /* Time unit label (Hours, Minutes, etc.) */
+
+/* Theme utility classes */
+.wheel-clock--dark; /* Dark theme variant */
+.wheel-clock--light; /* Light theme variant */
 ```
 
 ### Visual Design Features
 
 The library includes enhanced visual styling for realistic 3D wheel effects:
 
-- **Multi-stop gradients**: Smooth 6-stop gradient for realistic cylindrical depth
+- **Multi-stop gradients**: Smooth 6-stop gradient using CSS custom properties for theme-aware styling
 - **Enhanced shadows**: Carefully crafted top and bottom darkening for 3D appearance
-- **Smooth transitions**: Gradual opacity changes from 0.09 to 0.2 for natural lighting
+- **Theme-aware colors**: Gradients that adapt to dark/light themes automatically
+- **Performance optimized**: Using CSS variables for efficient gradient rendering
 - **Positioning precision**: Strategic gradient stops at 6%, 49%, 51%, and 90% for optimal effect
 
 ```css
-/* Example of the enhanced wheel gradient */
-.wheel-clock__wheel::after {
+/* Enhanced wheel gradient with theme support */
+.wheel-clock__wheel::before {
   background-image: linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0.09),
-    rgba(255, 255, 255, 0.15) 6%,
+    rgba(0, 0, 0, 0.09) 0%,
+    var(--gradient-highlight) 6%,
     rgba(255, 255, 255, 0.09) 49%,
     rgba(0, 0, 0, 0.09) 51%,
     rgba(0, 0, 0, 0.15) 90%,
-    rgba(0, 0, 0, 0.2)
+    var(--gradient-shadow) 100%
   );
+}
+
+/* Theme utility classes for easy customization */
+.wheel-clock--dark {
+  --wheel-bg: #222;
+  --wheel-text: #fff;
+  --gradient-highlight: rgba(255, 255, 255, 0.2);
+  --gradient-shadow: rgba(0, 0, 0, 0.4);
+}
+
+.wheel-clock--light {
+  --wheel-bg: #f5f5f5;
+  --wheel-text: #333;
+  --gradient-highlight: rgba(255, 255, 255, 0.8);
+  --gradient-shadow: rgba(0, 0, 0, 0.1);
 }
 ```
 
 ### Accessibility Features
 
-The library includes comprehensive accessibility support:
+The library includes comprehensive accessibility support with enhanced media queries:
 
 ```css
-/* Respects user preferences */
+/* Comprehensive motion reduction support */
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --animation-duration: 0.01ms;
+    --transition-base: none;
+  }
+
   .wheel-clock * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation: none !important;
+    transition: none !important;
   }
 }
 
+/* Enhanced contrast for better visibility */
 @media (prefers-contrast: high) {
-  /* Enhanced contrast for better visibility */
+  :root {
+    --wheel-bg: #000;
+    --wheel-text: #fff;
+    --wheel-border: #fff;
+    --wheel-shadow: 0 4px 8px rgba(255, 255, 255, 0.3);
+  }
 }
 
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --wheel-bg: #222;
+    --wheel-text: #fff;
+    --body-bg: #111;
+    --gradient-highlight: rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* Windows High Contrast mode support */
 @media (forced-colors: active) {
-  /* High contrast mode support */
+  :root {
+    --wheel-bg: ButtonFace;
+    --wheel-text: ButtonText;
+    --body-bg: Canvas;
+    --wheel-border: ButtonText;
+  }
+
+  .wheel-clock__wheel {
+    forced-color-adjust: none;
+    border: 2px solid ButtonText;
+  }
 }
 ```
 
@@ -308,23 +429,27 @@ The library includes comprehensive accessibility support:
 
 ### CSS Optimizations
 
-- **25% smaller CSS footprint** through consolidated selectors
-- **Enhanced 3D gradient effects** with smooth multi-stop gradients for realistic wheel depth
-- **CSS custom properties** organized by category for maintainability
-- **Modern logical properties** (`block-size`, `inline-size`, `inset`)
-- **Hardware acceleration** with `transform: translateZ(0)`
-- **CSS containment** for optimized rendering performance
+- **Organized CSS variables** grouped by category (Layout, Typography, Colors, Effects, Animation, Responsiveness)
+- **Enhanced 3D gradient effects** with theme-aware CSS custom properties for automatic light/dark adaptation
+- **CSS containment** for optimized rendering performance (`contain: layout style paint`)
+- **Hardware acceleration** with `translate3d()` transforms and strategic `translateZ(0)`
+- **Modern accessibility** including `prefers-color-scheme`, `forced-colors`, and comprehensive `prefers-reduced-motion`
+- **Performance isolation** with `isolation: isolate` to prevent rendering issues
+- **Responsive typography** using `clamp()` with dedicated min/max custom properties
+- **Theme utility classes** (`.wheel-clock--dark`, `.wheel-clock--light`) for easy theme switching
+- **Enhanced font optimization** with `font-feature-settings: "tnum"` for tabular numbers
+- **Improved gradient system** using CSS variables for consistent theming across components
 
 ### JavaScript Optimizations
 
-- **Object-based trackers** instead of Map for better performance
-- **Single data-attribute system** reduces DOM manipulation overhead
-- **Enhanced bidirectional rollover detection** with time unit cycling support for countdown scenarios
-- **Countdown animation optimization** with proper backward cycling (0→59, 0→23)
-- **NaN safety checks** for robust error handling
-- **Efficient memory management** with proper cleanup methods
-- **Unlimited number support** without artificial constraints
-- **Constants optimization** for consistent performance characteristics
+- **Enhanced animation management** with `Map<HTMLElement, number>` for precise timeout tracking
+- **Comprehensive memory management** with automatic cleanup of animation timeouts
+- **Options-based constructors** for better TypeScript integration and flexibility
+- **Robust error handling** with comprehensive NaN safety checks and validation
+- **Type-safe interfaces** with detailed JSDoc documentation for better developer experience
+- **Global exports** for both ES modules and browser environments
+- **Performance-optimized cleanup** methods that prevent memory leaks
+- **Enhanced timeout management** system with individual wheel timeout tracking
 
 ### Animation Features
 
@@ -355,8 +480,11 @@ ISC License - see LICENSE file for details
 
 ### Development Guidelines
 
-- Use TypeScript for all new JavaScript code
+- Use TypeScript for all new JavaScript code with comprehensive JSDoc documentation
+- Follow the options-based constructor pattern for enhanced type safety
 - Follow the established CSS custom property naming convention
 - Ensure accessibility features are maintained
 - Add performance optimizations where possible
-- Include proper cleanup methods for memory management
+- Include proper cleanup methods for memory management with timeout tracking
+- Use the enhanced `CountdownTrackerOptions` interface for new components
+- Maintain compatibility with both ES modules and global browser usage

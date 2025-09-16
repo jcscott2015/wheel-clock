@@ -25,6 +25,13 @@ interface ClockOptions {
   twelveHour?: boolean;
 }
 
+interface CountdownTrackerOptions {
+  label: TimeUnit;
+  value: string | number;
+  slotLabels?: SlotLabels;
+  type: "clock" | "countdown";
+}
+
 interface SlotLabels {
   Days?: string;
   Hours?: string;
@@ -33,38 +40,47 @@ interface SlotLabels {
 }
 
 /**
- * Represents a visual countdown tracker for a specific time unit (e.g., hours, minutes, seconds)
- * using animated number wheels. Handles DOM creation, digit parsing, animation direction, and
- * efficient updates for smooth transitions between values.
+ * Represents a visual countdown tracker for a wheel clock UI, managing the display and animation
+ * of tens and ones digit wheels for a specific time unit (e.g., hours, minutes, seconds).
+ *
+ * The `CountdownTracker` class is responsible for:
+ * - Creating and managing the DOM structure for a time unit's wheels and label.
+ * - Initializing and updating the visual state of the wheels based on value changes.
+ * - Handling digit transitions with appropriate animations.
+ * - Cleaning up resources and DOM elements when destroyed.
+ *
+ * Usage:
+ * - Instantiate with options specifying the time unit, initial value, slot labels, and tracker type.
+ * - Call `update()` to change the displayed value and trigger wheel animations.
+ * - Call `destroy()` to remove the tracker and release resources.
  *
  * @remarks
- * - Designed for use in a wheel-style clock/countdown UI.
- * - Handles both increasing and decreasing transitions, including rollovers (e.g., 59 → 00).
- * - Manages animation classes and timeouts for each wheel to ensure proper cleanup and memory management.
+ * This class is designed for use in a wheel clock countdown component, supporting efficient DOM updates
+ * and smooth digit animations. It is not intended for direct manipulation of time logic, but rather for
+ * visual representation and transitions.
  *
  * @example
  * ```typescript
- * const tracker = new CountdownTracker("Seconds", 59);
+ * const tracker = new CountdownTracker({
+ *   label: "seconds",
+ *   value: 59,
+ *   slotLabels: { seconds: "Sec" },
+ *   type: "countdown"
+ * });
  * document.body.appendChild(tracker.el);
- * tracker.update(0); // Animates from 59 to 00
- * ```
- *
- * @public
+ * tracker.update(58); // Animates wheels to new value
+ * tracker.destroy();  // Cleans up DOM and timeouts
  */
 class CountdownTracker {
   readonly el: HTMLElement;
   private currentValue: number;
   private readonly tensWheel: HTMLElement;
   private readonly onesWheel: HTMLElement;
-  private readonly label: TimeUnit;
+  private readonly type: CountdownTrackerOptions["type"];
   private readonly animationTimeouts: Map<HTMLElement, number> = new Map();
 
-  constructor(
-    label: TimeUnit,
-    value: string | number,
-    slotLabels?: SlotLabels
-  ) {
-    this.label = label;
+  constructor(options: CountdownTrackerOptions) {
+    const { label, value, slotLabels, type } = options;
     const numValue = Number(value);
     this.currentValue = isNaN(numValue) ? 0 : numValue;
 
@@ -73,6 +89,7 @@ class CountdownTracker {
       label,
       slotLabels
     );
+    this.type = type;
     this.el = el;
     this.tensWheel = tensWheel;
     this.onesWheel = onesWheel;
@@ -98,8 +115,8 @@ class CountdownTracker {
     el.className = "wheel-clock__container";
 
     // Create wheels
-    const tensWheel = this.createNumberWheel("tens", label);
-    const onesWheel = this.createNumberWheel("ones", label);
+    const tensWheel = this.createNumberWheel("tens");
+    const onesWheel = this.createNumberWheel("ones");
 
     // Create containers
     const wheelsPair = document.createElement("div");
@@ -141,10 +158,9 @@ class CountdownTracker {
    * Creates a number wheel element for the clock UI.
    *
    * @param type - The type of wheel to create (e.g., hours, minutes).
-   * @param label - The label representing the time unit for this wheel.
    * @returns The HTMLElement representing the number wheel.
    */
-  private createNumberWheel(type: WheelType, label: TimeUnit): HTMLElement {
+  private createNumberWheel(type: WheelType): HTMLElement {
     const wheel = document.createElement("div");
     wheel.className = "wheel-clock__number-wheel";
 
@@ -171,45 +187,6 @@ class CountdownTracker {
 
     const targetDigit = type === "tens" ? tens : ones;
     wheel.setAttribute("data-value", targetDigit.toString());
-  }
-
-  /**
-   * Determines whether a time unit (seconds, minutes, or hours) has cycled from its maximum value back to zero,
-   * or from zero to its maximum value during countdown.
-   *
-   * For "Seconds" and "Minutes", this checks transitions between 59 and 0.
-   * For "Hours", this checks transitions between 23 and 0.
-   *
-   * @param oldValue - The previous value of the time unit.
-   * @param newValue - The new value of the time unit.
-   * @returns An object with `isCycle: boolean` and `isForward: boolean`, or null if no cycle detected.
-   */
-  private getTimeUnitCycleInfo(
-    oldValue: number,
-    newValue: number
-  ): { isCycle: boolean; isForward: boolean } | null {
-    // Check if this is a time unit cycling scenario
-    if (this.label === "Seconds" || this.label === "Minutes") {
-      // Forward cycle: 59->0 (normal time progression)
-      if (oldValue === 59 && newValue === 0) {
-        return { isCycle: true, isForward: true };
-      }
-      // Backward cycle: 0->59 (countdown scenario)
-      if (oldValue === 0 && newValue === 59) {
-        return { isCycle: true, isForward: false };
-      }
-    }
-    if (this.label === "Hours") {
-      // Forward cycle: 23->0 (normal time progression)
-      if (oldValue === 23 && newValue === 0) {
-        return { isCycle: true, isForward: true };
-      }
-      // Backward cycle: 0->23 (countdown scenario)
-      if (oldValue === 0 && newValue === 23) {
-        return { isCycle: true, isForward: false };
-      }
-    }
-    return null;
   }
 
   /**
@@ -261,54 +238,42 @@ class CountdownTracker {
   }
 
   /**
-   * Updates the visual state and animation of a wheel element to reflect a value change.
+   * Updates the visual state of a wheel element to reflect a digit change,
+   * triggering an animation for the transition.
    *
-   * This method determines the direction of the value change (increasing or decreasing),
-   * updates the wheel's data attributes, manages animation classes, and ensures that
-   * any previous animation timeouts are cleared before starting a new animation.
-   * After the animation duration, it cleans up the animation classes.
+   * @param wheelType - Specifies which wheel to update ("tens" or "ones").
+   * @param oldDigit - The previous digit value displayed on the wheel.
+   * @param newDigit - The new digit value to display on the wheel.
    *
-   * @param wheel - The HTMLElement representing the wheel to update.
-   * @param type - The type of digit to update ("tens" or "ones").
-   * @param oldValue - The previous value displayed by the wheel.
-   * @param newValue - The new value to display on the wheel.
+   * If the digit has not changed, the function returns early.
+   * Sets appropriate data attributes for animation, applies the correct animation class
+   * based on the tracker type ("countdown" or otherwise), and removes the animation class
+   * after the animation duration.
    */
   private updateWheel(
-    wheel: HTMLElement,
-    type: WheelType,
-    oldValue: number,
-    newValue: number
+    wheelType: WheelType,
+    oldDigit: number,
+    newDigit: number
   ): void {
-    const formattedOld = this.formatValue(oldValue);
-    const formattedNew = this.formatValue(newValue);
-    const [oldTens, oldOnes] = this.parseDigits(formattedOld);
-    const [newTens, newOnes] = this.parseDigits(formattedNew);
-
-    const oldDigit = type === "tens" ? oldTens : oldOnes;
-    const newDigit = type === "tens" ? newTens : newOnes;
-
     if (oldDigit === newDigit) return;
 
-    const isIncreasing = this.getWheelDirection(
-      oldDigit,
-      newDigit,
-      oldValue,
-      newValue
-    );
+    const wheel = wheelType === "tens" ? this.tensWheel : this.onesWheel;
 
-    // Update data attribute with new target value
-    this.setWheelDataValue(wheel, type, newValue);
-
-    // Clear any existing timeouts for this specific wheel
+    // Clear existing timeout for this wheel
     this.clearAnimationTimeout(wheel);
 
-    // Add animation class based on direction
-    wheel.classList.remove("wheel-increasing", "wheel-decreasing");
-    wheel.classList.add(isIncreasing ? "wheel-increasing" : "wheel-decreasing");
+    // Set previous value for animation
+    wheel.setAttribute("data-next-previous", oldDigit.toString());
+    wheel.setAttribute("data-value", newDigit.toString());
 
-    // Clean up animation classes after animation completes
+    const animationClass = this.applyAnimationClass(
+      wheel,
+      this.type === "countdown"
+    );
+
+    // Use managed timeout
     const timeoutId = window.setTimeout(() => {
-      wheel.classList.remove("wheel-increasing", "wheel-decreasing");
+      wheel.classList.remove(animationClass);
       this.animationTimeouts.delete(wheel);
     }, CONSTANTS.ANIMATION_DURATION);
 
@@ -316,104 +281,53 @@ class CountdownTracker {
   }
 
   /**
-   * Determines the direction of a wheel animation based on digit and value changes.
+   * Applies an animation class to the given wheel element based on the countdown state.
    *
-   * Returns `true` if the wheel should move forward (increasing), or `false` if it should move backward (decreasing).
-   * Handles special cases for time unit cycling (e.g., 59 → 00), standard digit rollovers (e.g., 9 → 0 or 0 → 9),
-   * and general digit changes.
-   *
-   * @param oldDigit - The previous digit value (0-9) being displayed.
-   * @param newDigit - The new digit value (0-9) to be displayed.
-   * @param oldValue - The previous overall value (e.g., hour, minute, or second).
-   * @param newValue - The new overall value after the change.
-   * @returns `true` if the wheel direction is forward (increasing), `false` if backward (decreasing).
+   * @param wheel - The HTML element representing the wheel to which the animation class will be added.
+   * @param isCountdown - If `true`, applies the "wheel-decreasing" class; otherwise, applies the "wheel-increasing" class.
+   * @returns The name of the animation class that was added to the wheel element.
    */
-  private getWheelDirection(
-    oldDigit: number,
-    newDigit: number,
-    oldValue: number,
-    newValue: number
-  ): boolean {
-    // Check for time unit cycling first (this takes precedence)
-    const cycleInfo = this.getTimeUnitCycleInfo(oldValue, newValue);
-    if (cycleInfo?.isCycle) {
-      return cycleInfo.isForward;
-    }
-
-    // Handle rollover cases
-    const rolloverResult = this.handleRolloverCases(
-      oldDigit,
-      newDigit,
-      oldValue,
-      newValue
-    );
-    if (rolloverResult !== null) {
-      return rolloverResult;
-    }
-
-    // For countdown scenarios, prioritize overall value direction
-    return this.getDirectionBasedOnValue(
-      newValue,
-      oldValue,
-      newDigit,
-      oldDigit
-    );
+  private applyAnimationClass(
+    wheel: HTMLElement,
+    isCountdown: boolean
+  ): string {
+    const className = isCountdown ? "wheel-decreasing" : "wheel-increasing";
+    wheel.classList.add(className);
+    return className;
   }
 
   /**
-   * Handles rollover cases for wheel direction determination.
-   * Returns true for forward rollover, false for backward rollover, or null if no rollover detected.
+   * Updates the current value and triggers wheel updates if the value has changed.
+   *
+   * If the new value is different from the current value and the current value is non-negative,
+   * this method parses the tens and ones digits of both the old and new values, and updates
+   * the corresponding wheels only if their values have changed.
+   *
+   * @param val - The new value to set, as a string or number.
    */
-  private handleRolloverCases(
-    oldDigit: number,
-    newDigit: number,
-    oldValue: number,
-    newValue: number
-  ): boolean | null {
-    // Standard rollover detection for non-time-unit cases
-    let isForwardRollover =
-      oldDigit === 9 && newDigit === 0 && newValue > oldValue;
-    let isBackwardRollover =
-      oldDigit === 0 && newDigit === 9 && newValue < oldValue;
+  update(val: string | number): void {
+    const newValue = Number(val);
+    if (newValue < 0 || newValue > 9999) {
+      console.warn(`Value ${newValue} may be outside expected range.`);
+    }
+    if (val !== this.currentValue && this.currentValue >= 0) {
+      // Get old tens and ones
+      const [oldTens, oldOnes] = this.parseDigits(
+        this.formatValue(this.currentValue)
+      );
 
-    // General digit rollovers based on overall value direction
-    if (!isForwardRollover && !isBackwardRollover) {
-      if (oldDigit === 9 && newDigit === 0) {
-        // 9->0 rollover: check if overall value is increasing
-        isForwardRollover = newValue >= oldValue;
-      } else if (oldDigit === 0 && newDigit === 9) {
-        // 0->9 rollover: check if overall value is decreasing
-        isBackwardRollover = newValue <= oldValue;
-      }
-    }
+      // Set current value to new value
+      this.currentValue = Number(val);
 
-    if (isForwardRollover) {
-      return true;
-    }
-    if (isBackwardRollover) {
-      return false;
-    }
-    return null; // No rollover detected
-  }
+      // Get current tens and ones
+      const [tens, ones] = this.parseDigits(
+        this.formatValue(this.currentValue)
+      );
 
-  /**
-   * Determines direction based on overall value change, falling back to digit comparison.
-   */
-  private getDirectionBasedOnValue(
-    newValue: number,
-    oldValue: number,
-    newDigit: number,
-    oldDigit: number
-  ): boolean {
-    // This handles cases like going to "00" during countdown
-    if (newValue < oldValue) {
-      return false; // Animate backward when overall value is decreasing (countdown)
+      // Update wheels only if their values have changed
+      this.updateWheel("tens", oldTens, tens);
+      this.updateWheel("ones", oldOnes, ones);
     }
-    if (newValue > oldValue) {
-      return true; // Animate forward when overall value is increasing
-    }
-    // If overall values are equal, fall back to digit comparison
-    return newDigit > oldDigit;
   }
 
   /**
@@ -441,40 +355,6 @@ class CountdownTracker {
     this.animationTimeouts.forEach((id) => clearTimeout(id));
     this.animationTimeouts.clear();
   }
-
-  // Public update method
-  /**
-   * Updates the current value of the clock and triggers the wheel animations if the value has changed.
-   *
-   * Converts the input value to a number and compares it with the current value.
-   * If the value has changed, it stores the previous value in data attributes for animation purposes,
-   * updates the current value, and calls `updateWheel` for both the tens and ones wheels.
-   *
-   * @param val - The new value to update the clock with. Can be a string or number.
-   */
-  update = (val: string | number): void => {
-    const newValue = Number(val);
-
-    if (newValue !== this.currentValue) {
-      const oldValue = this.currentValue;
-
-      // Store old value in data attributes for animation
-      if (oldValue >= 0) {
-        const formattedOld = this.formatValue(oldValue);
-        const [oldTens, oldOnes] = this.parseDigits(formattedOld);
-
-        // Set previous values for roll animation
-        this.tensWheel.setAttribute("data-previous", oldTens.toString());
-        this.onesWheel.setAttribute("data-previous", oldOnes.toString());
-      }
-
-      this.currentValue = newValue;
-
-      // Update both wheels
-      this.updateWheel(this.tensWheel, "tens", oldValue, newValue);
-      this.updateWheel(this.onesWheel, "ones", oldValue, newValue);
-    }
-  };
 
   /**
    * Cleans up resources used by the clock instance.
@@ -548,37 +428,37 @@ function getTime(twelveHour?: boolean, showSeconds?: boolean): TimeObject {
 }
 
 /**
- * Represents a wheel-style clock or countdown timer component.
+ * Represents a visual clock or countdown timer component.
  *
- * The `Clock` class creates a visual clock or countdown timer using DOM elements,
- * updating its display with animation frames for smooth performance. It supports
- * both standard clocks and countdowns to a specific date/time, with customizable
- * options for 12-hour/24-hour format and whether to show seconds.
- *
- * @example
- * // Create a standard clock
- * const clock = new Clock({ twelveHour: true, showSeconds: false });
- * document.body.appendChild(clock.el);
- *
- * @example
- * // Create a countdown timer
- * const countdown = new Clock({
- *   countdown: "2024-12-31T23:59:59Z",
- *   callback: () => alert("Countdown finished!"),
- * });
- * document.body.appendChild(countdown.el);
+ * The `Clock` class creates a DOM element displaying time units (hours, minutes, seconds, etc.)
+ * and updates them in real-time using `requestAnimationFrame`. It supports both regular clocks
+ * and countdown timers, with customizable labels and optional completion callbacks.
  *
  * @remarks
- * - Call {@link destroy} to clean up resources and remove the clock from the DOM.
- * - The clock uses requestAnimationFrame for efficient updates and throttles updates for performance.
+ * - Uses `CountdownTracker` instances to render and update each time unit.
+ * - Supports throttled updates for performance.
+ * - Handles countdown completion and resource cleanup.
  *
- * @param options - Configuration options for the clock or countdown.
- * @see {@link destroy} for cleanup.
+ * @example
+ * ```typescript
+ * const clock = new Clock({
+ *   countdown: "2024-12-31T23:59:59",
+ *   callback: () => alert("Countdown finished!"),
+ *   twelveHour: true,
+ *   showSeconds: true,
+ *   slotLabels: { Hours: "H", Minutes: "M", Seconds: "S" }
+ * });
+ * document.body.appendChild(clock.el);
+ * ```
+ *
+ * @public
  */
 class Clock {
   readonly el: HTMLElement;
   private readonly trackers: Partial<Record<TimeUnit, CountdownTracker>> = {};
+  private readonly animationTimeouts: Map<string, number> = new Map();
   private animationFrameId: number | null = null;
+  private isDestroyed = false;
   private frameCounter = 0;
 
   constructor(options: ClockOptions = {}) {
@@ -619,7 +499,7 @@ class Clock {
 
     // Initialize trackers
     const initialTime = updateFn(countdown);
-    this.createTrackers(initialTime, slotLabels);
+    this.createTrackers(initialTime, slotLabels, countdown);
 
     // Start update loop with better performance
     this.startUpdateLoop(updateFn, countdown, callback);
@@ -640,18 +520,20 @@ class Clock {
    */
   private createTrackers(
     timeObject: TimeObject,
-    slotLabels?: SlotLabels
+    slotLabels?: SlotLabels,
+    countdown?: string
   ): void {
     const fragment = document.createDocumentFragment();
 
     for (const [key, value] of Object.entries(timeObject)) {
       if (key === "Total") continue;
 
-      const tracker = new CountdownTracker(
-        key as TimeUnit,
-        value as number,
-        slotLabels
-      );
+      const tracker = new CountdownTracker({
+        label: key as TimeUnit,
+        value: value as number,
+        slotLabels,
+        type: countdown ? "countdown" : "clock",
+      });
       this.trackers[key as TimeUnit] = tracker;
       fragment.appendChild(tracker.el);
     }
@@ -674,6 +556,9 @@ class Clock {
     callback?: () => void
   ): void {
     const update = () => {
+      // Safety check for destroyed instance
+      if (this.isDestroyed) return;
+
       this.animationFrameId = requestAnimationFrame(update);
 
       // Throttle updates for better performance
@@ -691,8 +576,15 @@ class Clock {
       this.updateTrackers(timeObject);
     };
 
-    // Start with initial delay
-    setTimeout(update, CONSTANTS.INITIAL_DELAY);
+    // Use managed timeout for initial delay
+    const initialTimeoutId = window.setTimeout(() => {
+      if (!this.isDestroyed) {
+        this.animationTimeouts.delete("initial");
+        update();
+      }
+    }, CONSTANTS.INITIAL_DELAY);
+
+    this.animationTimeouts.set("initial", initialTimeoutId);
   }
 
   /**
@@ -737,21 +629,21 @@ class Clock {
   }
 
   /**
-   * Cleans up resources used by the clock instance.
-   *
-    Object.values(this.trackers).forEach((tracker) => tracker.destroy());
-    // Clear the trackers object
-    (this.trackers as Record<string, CountdownTracker>) = {};
-    this.el.remove();
-   * This method clears any active animation timeouts and removes the associated
-   * DOM element from the document. After calling this method, the instance should
-   * not be used further.
+   * Cleans up resources used by the instance.
+   * Cancels any ongoing animation frame, destroys all trackers,
+   * clears the trackers object, and removes the associated DOM element.
    */
   destroy(): void {
+    this.isDestroyed = true;
+
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
     }
+
+    // Clear all managed timeouts
+    this.animationTimeouts.forEach((id) => clearTimeout(id));
+    this.animationTimeouts.clear();
 
     Object.values(this.trackers).forEach((tracker) => tracker.destroy());
     // Clear the trackers object
