@@ -19,7 +19,7 @@ interface TimeObject {
 
 interface ClockOptions {
   callback?: () => void;
-  countdown?: string;
+  countdown?: string | number;
   showSeconds?: boolean;
   slotLabels?: SlotLabels;
   twelveHour?: boolean;
@@ -129,7 +129,7 @@ class CountdownTracker {
 
     const slot = document.createElement("div");
     slot.className = "wheel-clock__slot";
-    slot.textContent = slotLabels?.[label] || label;
+    slot.textContent = slotLabels?.[label] ?? label;
 
     fragment.append(wheelsPair, slot);
     el.appendChild(fragment);
@@ -470,9 +470,12 @@ class Clock {
       slotLabels,
     } = options;
 
-    const countdown = countdownInput
-      ? new Date(Date.parse(countdownInput)).toString()
-      : "";
+    let countdown = "";
+    if (typeof countdownInput === "number") {
+      countdown = new Date(countdownInput).toISOString();
+    } else if (typeof countdownInput === "string") {
+      countdown = new Date(Date.parse(countdownInput)).toISOString();
+    }
 
     // Extract update function logic for better readability
     function createUpdateFn(

@@ -5,15 +5,13 @@ A high-performance, modern wheel-based clock and countdown timer library built w
 ## Features
 
 - 🔢 **Unlimited Numbers**: No artificial constraints - handles any value from Date objects
-- ⚡ **Smart Rollover Animations**: Intelligent bidirectional detection for natural transitions (9→0, 59→00, 0→59 countdown)
-- 🎯 **Multiple Display Modes**: Real-time clock, countdown timer, 12/24-hour formats
-- 🔄 **Countdown Optimized**: Proper backward animations for countdown scenarios (0→59, 0→23)
+- 🎯 **Multiple Display Modes**: Real-time clock, countdown timer, 12/24-hour formats, exclude seconds
 - 🏗️ **Enhanced Architecture**: Options-based constructors with comprehensive TypeScript interfaces
 - 🎨 **Enhanced Visual Design**: Theme-aware gradients with CSS custom properties and utility classes for easy customization
-- 🚀 **Performance Optimized**: Advanced timeout management with `Map<HTMLElement, number>` tracking
+- 🚀 **Performance Optimized**: Comprehensive timeout management with dual-layer tracking system for animations and initialization
 - ♿ **Accessibility First**: `prefers-reduced-motion`, screen reader support, and high contrast compatibility
 - 📦 **TypeScript Native**: Full type definitions with detailed JSDoc documentation
-- 🧹 **Memory Safe**: Comprehensive cleanup methods with animation timeout management
+- 🧹 **Memory Safe**: Comprehensive cleanup methods with managed timeouts and instance safety mechanisms
 - 🌐 **Production Ready**: Robust error handling with NaN safety checks and global exports
 - 🔧 **Developer Experience**: Enhanced interfaces, better error messages, and improved debugging support
 
@@ -43,13 +41,21 @@ import { Clock } from "wheel-clock";
 const clock = new Clock();
 document.body.appendChild(clock.el);
 
-// Create a countdown timer with callback
+// Create a countdown timer with callback (using timestamp)
 const countdown = new Clock({
-  countdown: new Date("2025-12-31T23:59:59").toString(),
+  countdown: new Date("2025-12-31T23:59:59").getTime(),
   callback: () => console.log("Time's up!"),
   showSeconds: true,
 });
 document.body.appendChild(countdown.el);
+
+// Create a countdown timer with callback (using string)
+const countdownString = new Clock({
+  countdown: "2025-12-31T23:59:59",
+  callback: () => console.log("Time's up!"),
+  showSeconds: true,
+});
+document.body.appendChild(countdownString.el);
 
 // Create a 12-hour clock without seconds
 const simpleClock = new Clock({
@@ -71,11 +77,22 @@ document.body.appendChild(simpleClock.el);
     <script src="dist/wheel-clock.js"></script>
     <script>
       // Global Clock constructor is automatically available
+
+      // using string countdown
       const clock = new Clock({
+        countdown: "2025-12-31T23:59:59",
         twelveHour: true,
         showSeconds: true,
       });
       document.body.appendChild(clock.el);
+
+      // using timestamp countdown
+      const timestampClock = new Clock({
+        countdown: new Date("2025-12-31T23:59:59").getTime(),
+        callback: () => alert("New Year!"),
+        showSeconds: true,
+      });
+      document.body.appendChild(timestampClock.el);
     </script>
   </body>
 </html>
@@ -121,7 +138,7 @@ minutesWheel.destroy();
 class Clock {
   constructor(options?: ClockOptions);
   readonly el: HTMLElement; // Main DOM element
-  destroy(): void; // Clean up resources
+  destroy(): void; // Clean up resources and managed timeouts
 }
 ```
 
@@ -130,7 +147,7 @@ class Clock {
 ```typescript
 interface ClockOptions {
   callback?: () => void;
-  countdown?: string;
+  countdown?: string | number;
   showSeconds?: boolean;
   slotLabels?: SlotLabels;
   twelveHour?: boolean;
@@ -211,16 +228,17 @@ wheel-clock/
 The library uses an enhanced data-attribute driven architecture with improved memory management and optimized CSS:
 
 - **Options-Based Constructors**: Enhanced `CountdownTrackerOptions` interface for better TypeScript integration
-- **Advanced Timeout Management**: `Map<HTMLElement, number>` system for precise animation timeout tracking
+- **Comprehensive Timeout Management**: Both `CountdownTracker` and `Clock` classes use Map<HTMLElement|string, number>` systems for precise timeout tracking
+- **Instance Safety**: `isDestroyed` flags prevent operations on destroyed instances and ensure safe cleanup
+- **Flexible Input Types**: Clock `countdown` parameter accepts both strings and numbers (timestamps) for maximum flexibility
 - **Single Data Attribute**: Numbers are displayed using `content: attr(data-value)` in CSS
 - **Object-Based Trackers**: Efficient `Record<string, CountdownTracker>` structure for performance
-- **Smart Rollover Detection**: Enhanced bidirectional logic for time unit cycling (59→0, 0→59, 23→0, 0→23)
 - **Countdown Animation Logic**: Proper backward animations for countdown scenarios with intelligent direction detection
 - **Hardware Acceleration**: All animations use `translate3d()` transforms for optimal GPU acceleration
 - **CSS Containment**: Strategic use of `contain: layout style paint` for isolated rendering
 - **Theme-Aware Styling**: CSS custom properties enable automatic dark/light mode adaptation
 - **Comprehensive Error Handling**: NaN safety with detailed validation and fallback mechanisms
-- **Enhanced Memory Safety**: Individual timeout cleanup per wheel element prevents memory leaks
+- **Enhanced Memory Safety**: Managed timeouts with automatic cleanup prevent memory leaks in both animation and initialization phases
 - **Type-Safe Exports**: Full TypeScript support with both value and type exports
 - **Global Compatibility**: Automatic global registration for browser environments
 
@@ -442,14 +460,16 @@ The library includes comprehensive accessibility support with enhanced media que
 
 ### JavaScript Optimizations
 
-- **Enhanced animation management** with `Map<HTMLElement, number>` for precise timeout tracking
-- **Comprehensive memory management** with automatic cleanup of animation timeouts
+- **Comprehensive timeout management** with `Map<HTMLElement, number>` for precise timeout tracking across all components
+- **Instance safety mechanisms**: with `isDestroyed` flags prevent operations on destroyed instances
+- **Flexible input handling**: supporting both string and numeric countdown inputs (ISO strings and timestamps)
+- **Comprehensive memory management** with automatic cleanup of all amangaed timeouts and animation frames
 - **Options-based constructors** for better TypeScript integration and flexibility
 - **Robust error handling** with comprehensive NaN safety checks and validation
 - **Type-safe interfaces** with detailed JSDoc documentation for better developer experience
 - **Global exports** for both ES modules and browser environments
-- **Performance-optimized cleanup** methods that prevent memory leaks
-- **Enhanced timeout management** system with individual wheel timeout tracking
+- **Performance-optimized cleanup** methods that prevent memory leaks across animation and initialization phases
+- **Managed initialization** system with safe timeout handling for initial delays
 
 ### Animation Features
 
