@@ -457,6 +457,7 @@ class Clock {
   readonly el: HTMLElement;
   private readonly trackers: Partial<Record<TimeUnit, CountdownTracker>> = {};
   private readonly animationTimeouts: Map<string, number> = new Map();
+  private readonly showSeconds: boolean;
   private animationFrameId: number | null = null;
   private isDestroyed = false;
   private frameCounter = 0;
@@ -469,6 +470,8 @@ class Clock {
       showSeconds,
       slotLabels,
     } = options;
+
+    this.showSeconds = showSeconds ?? false;
 
     let countdown = "";
     if (typeof countdownInput === "number") {
@@ -570,7 +573,7 @@ class Clock {
       const timeObject = updateFn(countdown);
 
       // Check for countdown completion
-      if (countdown && (timeObject.Total as number) < 0) {
+      if (countdown && this.shouldCompleteCountdown(timeObject)) {
         this.handleCountdownComplete(callback);
         return;
       }
@@ -588,6 +591,27 @@ class Clock {
     }, CONSTANTS.INITIAL_DELAY);
 
     this.animationTimeouts.set("initial", initialTimeoutId);
+  }
+
+  /**
+   * Determines whether the countdown should be considered complete based on the provided time object.
+   *
+   * - If `showSeconds` is enabled, the countdown completes when the total time is less than 0 milliseconds.
+   * - If `showSeconds` is disabled, the countdown completes 1 minute early (when the total time is less than 60,000 milliseconds).
+   *
+   * @param timeObject - An object containing the total remaining time in milliseconds.
+   * @returns `true` if the countdown should be completed, otherwise `false`.
+   */
+  private shouldCompleteCountdown(timeObject: TimeObject): boolean {
+    const totalMs = timeObject.Total as number;
+
+    // If showSeconds is enabled, complete when Total < 0 (normal behavior)
+    if (this.showSeconds) {
+      return totalMs < 0;
+    }
+
+    // If showSeconds is false, complete 1 minute early (when Total < 60000ms)
+    return totalMs < 60000; // 60 seconds * 1000ms = 60000ms
   }
 
   /**

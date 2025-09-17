@@ -5,7 +5,7 @@
   --wheel-width: 0.75em;
   --wheel-gap: 1rem;
   --container-gap: 1rem;
-  --clock-margin: 20px;
+  --clock-margin: 0;
   --wheel-border-radius: 6px;
   --perspective: 400px;
 
@@ -67,6 +67,14 @@
 .wheel-clock *::before,
 .wheel-clock *::after {
   box-sizing: border-box;
+}
+
+.wheel-clock > div:first-of-type {
+  margin-left: 0 !important;
+}
+
+.wheel-clock > div:last-of-type {
+  margin-right: 0 !important;
 }
 
 .wheel-clock__container {
