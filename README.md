@@ -317,28 +317,56 @@ new Clock({ countdown: "2025-12-31T18:59:59-05:00" }); // EST
 The library applies these default inline styles (all customizable):
 
 ```typescript
-// Container dimensions
-width: "40px";
-height: "60px";
-backgroundColor: "#f8f9fa";
-border: "2px solid #e9ecef";
-borderRadius: "8px";
-
-// Typography
-fontSize: "24px";
-fontWeight: "700";
-color: "#2c3e50";
-fontFamily: "system-ui, -apple-system, sans-serif";
-
-// Animation optimizations
-willChange: "transform";
-backfaceVisibility: "hidden";
-transform: "translateZ(0)"; // Hardware acceleration
+".wheel-clock__container": {
+  contain: "layout style",
+  display: "inline-block",
+  textAlign: "center",
+},
+".wheel-clock__pair": {
+  contain: "layout",
+  display: "flex",
+},
+".wheel-clock": {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "center",
+  contain: "layout style paint",
+  isolation: "isolate",
+  willChange: "transform",
+},
+".wheel-clock__wheel": {
+  backfaceVisibility: "hidden",
+  contain: "layout style paint",
+  isolation: "isolate",
+  display: "inline-block",
+  overflow: "hidden",
+  position: "relative",
+},
+".wheel-clock__number-wheel": {
+  position: "relative",
+  width: "100%",
+  height: "100%",
+  contain: "layout style paint",
+  isolation: "isolate",
+  willChange: "transform",
+  userSelect: "none",
+  textRendering: "optimizeSpeed",
+},
+".wheel-value wheel-value--current": {
+  alignItems: "center",
+  display: "flex",
+  inset: 0,
+  justifyContent: "center",
+  lineHeight: 1,
+  position: "absolute",
+  userSelect: "none",
+  zIndex: 1,
+}
 ```
 
 ### Custom Styling
 
-Since all styling is handled via inline styles, you can customize the appearance by modifying the source code or extending the classes:
+Since all styling is handled via inline styles, you can customize the appearance by modifying the source code, adding an external CSS file (like the sample included), or extending the classes:
 
 ```typescript
 // Example: Custom styled wheel

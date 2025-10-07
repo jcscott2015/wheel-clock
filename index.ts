@@ -127,6 +127,7 @@ class CountdownTracker {
     // Apply container styles
     Object.assign(el.style, {
       display: "inline-block",
+      contain: "layout style",
       textAlign: "center",
     });
 
@@ -140,6 +141,7 @@ class CountdownTracker {
 
     // Style the pair container
     Object.assign(wheelsPair.style, {
+      contain: "layout",
       display: "flex",
     });
 
@@ -175,9 +177,12 @@ class CountdownTracker {
 
     // Apply inline styles for container with explicit dimensions
     Object.assign(container.style, {
-      position: "relative",
-      overflow: "hidden",
+      backfaceVisibility: "hidden",
+      contain: "layout style paint",
+      isolation: "isolate",
       display: "inline-block",
+      overflow: "hidden",
+      position: "relative",
     });
 
     container.appendChild(wheel);
@@ -203,6 +208,11 @@ class CountdownTracker {
       position: "relative",
       width: "100%",
       height: "100%",
+      contain: "layout style paint",
+      isolation: "isolate",
+      willChange: "transform",
+      userSelect: "none",
+      textRendering: "optimizeSpeed",
     });
 
     // Create and add initial current div
@@ -228,13 +238,13 @@ class CountdownTracker {
 
     // Base styles for all value divs
     Object.assign(div.style, {
-      position: "absolute",
-      inset: 0,
-      display: "flex",
       alignItems: "center",
+      display: "flex",
+      inset: 0,
       justifyContent: "center",
-      userSelect: "none",
       lineHeight: 1,
+      position: "absolute",
+      userSelect: "none",
       zIndex: 1,
     });
 
@@ -403,7 +413,9 @@ class CountdownTracker {
 
     // Position new div off-screen based on direction
     const startTransform =
-      direction === "up" ? "translateY(100%)" : "translateY(-100%)";
+      direction === "up"
+        ? "translate3d(0, 100%, 0)"
+        : "translate3d(0, -100%, 0)";
     newDiv.style.transform = startTransform;
 
     wheel.appendChild(newDiv);
@@ -415,13 +427,25 @@ class CountdownTracker {
     // Define keyframes for better performance
     const outKeyframes =
       direction === "up"
-        ? [{ transform: "translateY(0)" }, { transform: "translateY(-100%)" }]
-        : [{ transform: "translateY(0)" }, { transform: "translateY(100%)" }];
+        ? [
+            { transform: "translate3d(0, 0, 0)" },
+            { transform: "translate3d(0, -100%, 0)" },
+          ]
+        : [
+            { transform: "translate3d(0, 0, 0)" },
+            { transform: "translate3d(0, 100%, 0)" },
+          ];
 
     const inKeyframes =
       direction === "up"
-        ? [{ transform: "translateY(100%)" }, { transform: "translateY(0)" }]
-        : [{ transform: "translateY(-100%)" }, { transform: "translateY(0)" }];
+        ? [
+            { transform: "translate3d(0, 100%, 0)" },
+            { transform: "translate3d(0, 0, 0)" },
+          ]
+        : [
+            { transform: "translate3d(0, -100%, 0)" },
+            { transform: "translate3d(0, 0, 0)" },
+          ];
 
     // Start animations
     const outAnimation = currentDiv.animate(outKeyframes, {
@@ -710,6 +734,9 @@ class Clock {
       display: "flex",
       alignItems: "flex-start",
       justifyContent: "center",
+      contain: "layout style paint",
+      isolation: "isolate",
+      willChange: "transform",
     });
 
     // Initialize trackers
