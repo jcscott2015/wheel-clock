@@ -322,10 +322,6 @@ The library applies these default inline styles (all customizable):
   display: "inline-block",
   textAlign: "center",
 },
-".wheel-clock__pair": {
-  contain: "layout",
-  display: "flex",
-},
 ".wheel-clock": {
   display: "flex",
   alignItems: "flex-start",
@@ -333,6 +329,10 @@ The library applies these default inline styles (all customizable):
   contain: "layout style paint",
   isolation: "isolate",
   willChange: "transform",
+},
+".wheel-clock__pair": {
+  contain: "layout",
+  display: "flex",
 },
 ".wheel-clock__wheel": {
   backfaceVisibility: "hidden",
@@ -343,14 +343,14 @@ The library applies these default inline styles (all customizable):
   position: "relative",
 },
 ".wheel-clock__number-wheel": {
-  position: "relative",
-  width: "100%",
-  height: "100%",
   contain: "layout style paint",
   isolation: "isolate",
-  willChange: "transform",
-  userSelect: "none",
+  position: "relative",
   textRendering: "optimizeSpeed",
+  userSelect: "none",
+  height: "100%",
+  width: "100%",
+  willChange: "transform",
 },
 ".wheel-value wheel-value--current": {
   alignItems: "center",
