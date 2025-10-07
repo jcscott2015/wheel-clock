@@ -1,19 +1,21 @@
 # Wheel Clock
 
-A high-performance, modern wheel-based clock and countdown timer library built with TypeScript. Features unlimited number support, enhanced timeout management, options-based constructors, optimized rollover animations, and comprehensive accessibility support with advanced memory management.
+A high-performance, modern wheel-based clock and countdown timer library built with TypeScript. Features smooth rolling animations, comprehensive animation controls, CSS-free implementation with inline styling, and robust memory management.
 
 ## Features
 
-- 🔢 **Unlimited Numbers**: No artificial constraints - handles any value from Date objects
-- 🎯 **Multiple Display Modes**: Real-time clock, countdown timer, 12/24-hour formats, exclude seconds
-- 🏗️ **Enhanced Architecture**: Options-based constructors with comprehensive TypeScript interfaces
-- 🎨 **Enhanced Visual Design**: Theme-aware gradients with CSS custom properties and utility classes for easy customization
-- 🚀 **Performance Optimized**: Comprehensive timeout management with dual-layer tracking system for animations and initialization
-- ♿ **Accessibility First**: `prefers-reduced-motion`, screen reader support, and high contrast compatibility
-- 📦 **TypeScript Native**: Full type definitions with detailed JSDoc documentation
-- 🧹 **Memory Safe**: Comprehensive cleanup methods with managed timeouts and instance safety mechanisms
-- 🌐 **Production Ready**: Robust error handling with NaN safety checks and global exports
-- 🔧 **Developer Experience**: Enhanced interfaces, better error messages, and improved debugging support
+- 🎨 **CSS-Free Implementation**: No external CSS dependencies - all styling handled via inline styles in TypeScript (A CSS file is provided for demo purposes)
+- 🎯 **Smooth Rolling Animations**: Natural wheel transitions with configurable direction, duration, and easing
+- 🔢 **Unlimited Numbers**: Handles any value from 0 to 9999 with proper digit separation and formatting
+- 🎮 **Animation Control**: Configurable duration, easing functions, and direction (up/down/auto)
+- 🏗️ **Modern Architecture**: RequestAnimationFrame-based animation management with proper cleanup
+- 🚀 **Performance Optimized**: Hardware-accelerated animations with transform3d and efficient DOM updates
+- ♿ **Accessibility Ready**: Screen reader support and motion-sensitive design patterns
+- 📦 **TypeScript Native**: Full type definitions with comprehensive interfaces
+- 🧹 **Memory Safe**: Automatic cleanup with proper resource management and animation cancellation
+- 🌐 **Production Ready**: Robust error handling, input validation, and cross-browser compatibility
+- 🔧 **Developer Experience**: Intuitive APIs, detailed documentation, and comprehensive debugging support
+- ⏰ **Smart Completion**: Configurable early completion with threshold-based callbacks
 
 ## Installation
 
@@ -27,8 +29,8 @@ npm install wheel-clock
 
 Clone or download the repository and include the built files:
 
-- `dist/wheel-clock.js` - Main library
-- `wheel-clock.css` - Optimized CSS with modern features
+- `dist/index.js` - Main library
+- No CSS required - all styling is handled inline
 
 ## Quick Start
 
@@ -41,28 +43,34 @@ import { Clock } from "wheel-clock";
 const clock = new Clock();
 document.body.appendChild(clock.el);
 
-// Create a countdown timer with callback (using timestamp)
+// Create a countdown timer with custom animation
 const countdown = new Clock({
-  countdown: new Date("2025-12-31T23:59:59").getTime(),
-  callback: () => console.log("Time's up!"),
-  showSeconds: true,
-});
-document.body.appendChild(countdown.el);
-
-// Create a countdown timer with callback (using ISO string)
-const countdownString = new Clock({
   countdown: "2025-12-31T23:59:59Z",
   callback: () => console.log("Time's up!"),
   showSeconds: true,
+  earlyCompletionMs: 58000, // Complete 58 seconds early for smooth "00:00:00" display
+  animation: {
+    duration: 800,
+    easing: "ease-out",
+    direction: "down",
+  },
 });
-document.body.appendChild(countdownString.el);
+document.body.appendChild(countdown.el);
 
-// Create a 12-hour clock without seconds
-const simpleClock = new Clock({
-  twelveHour: true,
-  showSeconds: false,
+// Create a fast-updating clock
+const fastClock = new Clock({
+  animation: {
+    duration: 200,
+    easing: "linear",
+  },
 });
-document.body.appendChild(simpleClock.el);
+document.body.appendChild(fastClock.el);
+
+// Instant updates (no animation)
+const instantClock = new Clock({
+  animation: { duration: 0 },
+});
+document.body.appendChild(instantClock.el);
 
 // Custom slot labels
 const customClock = new Clock({
@@ -82,29 +90,20 @@ document.body.appendChild(customClock.el);
 ```html
 <!DOCTYPE html>
 <html>
-  <head>
-    <link rel="stylesheet" href="wheel-clock.css" />
-  </head>
   <body>
-    <script src="dist/wheel-clock.js"></script>
+    <script src="dist/index.js"></script>
     <script>
       // Global Clock constructor is automatically available
-
-      // Using ISO string countdown
       const clock = new Clock({
         countdown: "2025-12-31T23:59:59Z",
         twelveHour: true,
         showSeconds: true,
+        animation: {
+          duration: 600,
+          direction: "auto",
+        },
       });
       document.body.appendChild(clock.el);
-
-      // Using timestamp countdown
-      const timestampClock = new Clock({
-        countdown: new Date("2025-12-31T23:59:59").getTime(),
-        callback: () => alert("New Year!"),
-        showSeconds: true,
-      });
-      document.body.appendChild(timestampClock.el);
     </script>
   </body>
 </html>
@@ -117,29 +116,38 @@ document.body.appendChild(customClock.el);
 ```typescript
 import { CountdownTracker } from "wheel-clock";
 
-// Create individual time unit wheels with enhanced options
+// Create individual time unit wheels with custom animations
 const hoursWheel = new CountdownTracker({
   label: "Hours",
   value: 12,
   type: "clock",
+  animation: {
+    duration: 400,
+    easing: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+    direction: "up",
+  },
 });
 
 const minutesWheel = new CountdownTracker({
   label: "Minutes",
   value: 30,
   type: "countdown",
+  animation: {
+    duration: 600,
+    direction: "down",
+  },
 });
 
 document.body.appendChild(hoursWheel.el);
 document.body.appendChild(minutesWheel.el);
 
-// Update values dynamically with animation
+// Update values dynamically with smooth animations
 hoursWheel.update(13);
 minutesWheel.update(45);
 
-// Clean up when done (includes timeout cleanup)
-hoursWheel.destroy?.();
-minutesWheel.destroy?.();
+// Clean up when done
+hoursWheel.destroy();
+minutesWheel.destroy();
 ```
 
 ### React Hook Integration
@@ -148,10 +156,16 @@ minutesWheel.destroy?.();
 import { useWheelClock } from "your-hooks";
 
 const CountdownComponent = ({ endDate, callback }) => {
-  const { containerRef, isReady } = useWheelClock({
+  const { containerRef, isReady, isTimeReached } = useWheelClock({
     countdown: endDate,
     callback,
     showSeconds: true,
+    earlyCompletionMs: 58000,
+    animation: {
+      duration: 800,
+      easing: "ease-in-out",
+      direction: "down",
+    },
     slotLabels: {
       Days: "Days",
       Hours: "Hours",
@@ -164,6 +178,7 @@ const CountdownComponent = ({ endDate, callback }) => {
     <div
       ref={containerRef}
       className={`countdown-timer ${isReady ? "ready" : "loading"}`}
+      data-time-reached={isTimeReached}
     />
   );
 };
@@ -177,7 +192,8 @@ const CountdownComponent = ({ endDate, callback }) => {
 class Clock {
   constructor(options?: ClockOptions);
   readonly el: HTMLElement; // Main DOM element
-  destroy(): void; // Clean up resources and managed timeouts
+  get isTimeReached(): boolean; // Whether countdown has reached completion threshold
+  destroy(): void; // Clean up resources and animations
 }
 ```
 
@@ -187,9 +203,17 @@ class Clock {
 interface ClockOptions {
   callback?: () => void;
   countdown?: string | number; // ISO string or timestamp in milliseconds
+  earlyCompletionMs?: number; // Complete early by this many milliseconds (default: varies by showSeconds)
   showSeconds?: boolean;
   slotLabels?: SlotLabels;
   twelveHour?: boolean;
+  animation?: AnimationOptions;
+}
+
+interface AnimationOptions {
+  duration?: number; // Animation duration in milliseconds (default: 600)
+  easing?: string; // CSS easing function (default: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)')
+  direction?: "up" | "down" | "auto"; // Animation direction (default: 'auto')
 }
 
 interface SlotLabels {
@@ -207,7 +231,7 @@ class CountdownTracker {
   constructor(options: CountdownTrackerOptions);
   readonly el: HTMLElement; // Wheel DOM element
   update: (value: number) => void; // Update wheel value with animation
-  destroy?: () => void; // Clean up resources and animation timeouts
+  destroy: () => void; // Clean up resources and animations
 }
 
 interface CountdownTrackerOptions {
@@ -215,66 +239,195 @@ interface CountdownTrackerOptions {
   value: string | number;
   slotLabels?: SlotLabels;
   type: "clock" | "countdown";
+  animation?: AnimationOptions;
 }
 
 type TimeUnit = "Seconds" | "Minutes" | "Hours" | "Days";
 ```
 
-### Performance Constants
+### Early Completion Feature
 
-The library includes optimized constants for consistent performance:
+The library includes intelligent early completion to provide smooth user experience:
 
 ```typescript
-const CONSTANTS = {
-  ANIMATION_DURATION: 600, // ms
-  UPDATE_THROTTLE: 10, // frames
-  INITIAL_DELAY: 500, // ms
-} as const;
+// Early completion automatically determined based on showSeconds
+const countdown = new Clock({
+  countdown: "2025-12-31T23:59:59Z",
+  showSeconds: false, // Will complete ~58 seconds early to show "00:00:00"
+  callback: () => console.log("Countdown complete!"), // Fires when threshold reached
+});
+
+// Custom early completion threshold
+const customCountdown = new Clock({
+  countdown: "2025-12-31T23:59:59Z",
+  earlyCompletionMs: 30000, // Complete 30 seconds early
+  callback: () => console.log("Almost there!"),
+});
+
+// Check completion state
+console.log(countdown.isTimeReached); // true when threshold reached
+```
+
+### Animation Behavior
+
+The library provides intelligent animation direction based on component type:
+
+- **Clock Type**: Always animates "up" (digits roll upward) - representing forward time progression
+- **Countdown Type**: Always animates "down" (digits roll downward) - representing time counting down
+- **Auto Direction**: Automatically chooses direction based on component type
+- **Manual Override**: Use `direction: 'up'` or `direction: 'down'` to force specific animation direction
+
+```typescript
+// Clock always rolls up (natural time progression)
+const clock = new Clock({
+  animation: { direction: "auto" }, // Will roll up
+});
+
+// Countdown always rolls down (counting down)
+const countdown = new Clock({
+  countdown: "2025-12-31T23:59:59Z",
+  animation: { direction: "auto" }, // Will roll down
+});
+
+// Force specific direction
+const customClock = new Clock({
+  animation: { direction: "up" }, // Always rolls up regardless of type
+});
 ```
 
 ## Input Format Support
 
 ### Countdown Input Types
 
-The library accepts multiple input formats for maximum flexibility:
-
 ```typescript
 // Unix timestamp in milliseconds (JavaScript standard)
-const timestampMs = new Date("2025-12-31T23:59:59Z").getTime(); // 1735689599000
+const timestampMs = new Date("2025-12-31T23:59:59Z").getTime();
 new Clock({ countdown: timestampMs });
-
-// Unix timestamp in seconds (convert to milliseconds)
-const timestampSec = 1735689599; // Convert: timestampSec * 1000
-new Clock({ countdown: timestampSec * 1000 });
 
 // ISO 8601 string formats
 new Clock({ countdown: "2025-12-31T23:59:59Z" }); // UTC
 new Clock({ countdown: "2025-12-31T15:59:59-08:00" }); // PST
 new Clock({ countdown: "2025-12-31T18:59:59-05:00" }); // EST
-
-// Note: All formats are converted to UTC internally for accurate countdown calculation
 ```
 
-### Timezone Handling
+## Styling & Customization
+
+### Default Inline Styles
+
+The library applies these default inline styles (all customizable):
 
 ```typescript
-// All these represent the same moment in time:
-const utc = "2025-12-31T23:59:59Z"; // UTC
-const pst = "2025-12-31T15:59:59-08:00"; // Pacific
-const est = "2025-12-31T18:59:59-05:00"; // Eastern
+// Container dimensions
+width: "40px";
+height: "60px";
+backgroundColor: "#f8f9fa";
+border: "2px solid #e9ecef";
+borderRadius: "8px";
 
-// All produce identical countdown results
-new Clock({ countdown: utc });
-new Clock({ countdown: pst });
-new Clock({ countdown: est });
+// Typography
+fontSize: "24px";
+fontWeight: "700";
+color: "#2c3e50";
+fontFamily: "system-ui, -apple-system, sans-serif";
+
+// Animation optimizations
+willChange: "transform";
+backfaceVisibility: "hidden";
+transform: "translateZ(0)"; // Hardware acceleration
 ```
+
+### Custom Styling
+
+Since all styling is handled via inline styles, you can customize the appearance by modifying the source code or extending the classes:
+
+```typescript
+// Example: Custom styled wheel
+class CustomCountdownTracker extends CountdownTracker {
+  private createWheelContainer(
+    type: WheelType,
+    wheel: HTMLElement
+  ): HTMLElement {
+    const container = super.createWheelContainer(type, wheel);
+
+    // Apply custom styles
+    Object.assign(container.style, {
+      backgroundColor: "#1a1a1a",
+      border: "3px solid #333",
+      borderRadius: "12px",
+      boxShadow: "0 4px 8px rgba(0,0,0,0.3)",
+    });
+
+    return container;
+  }
+}
+```
+
+## Performance Optimizations
+
+### Animation Performance
+
+- **RequestAnimationFrame**: Smooth 60fps animations with proper frame management
+- **Hardware Acceleration**: All animations use `translate3d()` for GPU optimization
+- **Smart Interruption**: New animations properly cancel previous ones using `cancelAnimationFrame`
+- **Memory Management**: Automatic cleanup prevents memory leaks
+- **Efficient Updates**: Only animates when values actually change
+- **Throttled Updates**: Update loop throttling prevents excessive DOM manipulation
+
+### Rendering Optimizations
+
+- **Minimal DOM**: Creates only necessary elements during animations
+- **Efficient Cleanup**: Removes temporary elements after animations complete
+- **Transform-based**: Uses CSS transforms instead of position changes
+- **Single Source of Truth**: Each wheel maintains one current value element
+- **Optimized Update Loop**: Uses `UPDATE_THROTTLE` constant for performance tuning
+
+## Browser Support
+
+- **Chrome/Edge**: 60+ (full requestAnimationFrame support)
+- **Firefox**: 55+ (full requestAnimationFrame support)
+- **Safari**: 12+ (full requestAnimationFrame support)
+- **Mobile**: All modern mobile browsers
+- **Legacy**: Graceful degradation (animations may not work in very old browsers)
+
+## Architecture Overview
+
+### CSS-Free Design
+
+The library eliminates CSS dependencies by:
+
+- **Inline Styling**: All styles applied via `Object.assign(element.style, {...})`
+- **Dynamic Elements**: Creates and removes DOM elements as needed for animations
+- **No External CSS**: Zero external stylesheets required (A CSS file is provided for demo purposes)
+- **Type-Safe Styling**: All style properties managed in TypeScript
+
+### Animation System
+
+- **RequestAnimationFrame**: Modern 60fps animation loop with proper cancellation
+- **Frame-based**: Animation completion handled with frame counters and state management
+- **Smooth Transitions**: Simultaneous in/out animations for natural rolling effect
+- **Direction Logic**: Intelligent direction based on component type (clock vs countdown)
+- **Throttled Updates**: Configurable update throttling for performance optimization
+
+### Memory Management
+
+- **Animation Cleanup**: RequestAnimationFrame IDs tracked and cancelled properly
+- **Resource Tracking**: All animations and timeouts tracked and cleaned up on destroy
+- **Element Lifecycle**: Dynamic creation and removal of animation elements
+- **Timeout Management**: No timeout leaks with proper cleanup patterns using `Set<number>`
+
+### State Management
+
+- **Private Properties**: Internal state managed with private properties and public getters
+- **Immutable Updates**: State changes handled through controlled update methods
+- **Lifecycle Tracking**: `isDestroyed` flag prevents operations on destroyed instances
+- **Threshold Logic**: Configurable completion thresholds with intelligent defaults
 
 ## Development
 
 ### Build System
 
 ```bash
-# Build the TypeScript to JavaScript
+# Build TypeScript to JavaScript
 npm run build
 
 # Development mode with file watching
@@ -282,155 +435,39 @@ npm run dev
 
 # Start local development server
 npm run serve
-# Opens http://localhost:8000
 ```
 
 ### Project Structure
 
 ```
 wheel-clock/
-├── index.html            # Demo page
-├── package.json          # Package configuration
-├── tsconfig.json         # TypeScript configuration
-├── wheel-clock.ts        # Main TypeScript source
-├── wheel-clock.css       # Optimized CSS with modern features
-└── dist/                 # Built files
-    ├── wheel-clock.js    # Compiled JavaScript
-    └── wheel-clock.d.ts  # TypeScript declarations
+├── index.html                # Demo page
+├── package.json              # Package configuration
+├── tsconfig.json             # TypeScript configuration
+├── index.css                 # CSS for demo purposes
+├── index.ts                  # Main TypeScript source (CSS-free)
+└── dist/                     # Built files
+    ├── index.d.ts            # TypeScript declarations
+    ├── index.d.ts.map.       # Map for inspector
+    ├── index.esm.js.         # Compiled Javascript ES Module
+    ├── index.esm.min.js      # Compiled Minified Javascript ES Module
+    ├── index.esm.min.js.map  # Map for inspector
+    ├── index.js              # Compiled Common JavaScript
+    ├── index.js.map          # Map for inspector
+    ├── index.min.js          # Compiled Minified Common Javascript
+    └── index.min.js.map      # Map for inspector
 ```
 
-### Architecture Overview
+## Constants
 
-The library uses an enhanced data-attribute driven architecture with improved memory management:
-
-- **Options-Based Constructors**: Enhanced interfaces for better TypeScript integration
-- **Flexible Input Types**: Clock `countdown` parameter accepts both ISO strings and timestamps
-- **Comprehensive Timeout Management**: Managed timeouts prevent memory leaks
-- **Instance Safety**: `isDestroyed` flags prevent operations on destroyed instances
-- **Single Data Attribute**: Numbers displayed using `content: attr(data-value)`
-- **Smart Rollover Detection**: Enhanced bidirectional logic for time unit cycling
-- **Hardware Acceleration**: All animations use `translate3d()` for GPU optimization
-- **CSS Containment**: Strategic `contain: layout style paint` for isolated rendering
-- **Theme-Aware Styling**: CSS custom properties enable automatic dark/light mode
-- **Enhanced Memory Safety**: Automatic cleanup prevents memory leaks
-- **Type-Safe Exports**: Full TypeScript support with both value and type exports
-
-## Styling & Customization
-
-### CSS Custom Properties
-
-```css
-:root {
-  /* Layout & Spacing */
-  --wheel-height: 1.25em;
-  --wheel-width: 0.75em;
-  --wheel-gap: 1rem;
-  --container-gap: 1rem;
-  --wheel-border-radius: 6px;
-  --perspective: 400px;
-
-  /* Typography */
-  --wheel-font-size: 9vw;
-  --slot-font-size: 2vw;
-  --font-family: "Arial", sans-serif;
-  --wheel-font-weight: 400;
-  --line-height-base: 1;
-
-  /* Colors */
-  --wheel-bg: #444;
-  --wheel-text: #fff;
-  --body-bg: #eee;
-  --gradient-highlight: rgba(255, 255, 255, 0.15);
-  --gradient-shadow: rgba(0, 0, 0, 0.2);
-
-  /* Animation */
-  --animation-duration: 600ms;
-  --animation-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-```
-
-### Theme Customization
-
-```html
-<!-- Default theme -->
-<div class="wheel-clock" id="clock1"></div>
-
-<!-- Dark theme -->
-<div class="wheel-clock wheel-clock--dark" id="clock2"></div>
-
-<!-- Light theme -->
-<div class="wheel-clock wheel-clock--light" id="clock3"></div>
-```
-
-### Accessibility Features
-
-```css
-/* Motion reduction support */
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --animation-duration: 0.01ms;
-  }
-  .wheel-clock * {
-    animation: none !important;
-    transition: none !important;
-  }
-}
-
-/* High contrast support */
-@media (prefers-contrast: high) {
-  :root {
-    --wheel-bg: #000;
-    --wheel-text: #fff;
-    --wheel-border: #fff;
-  }
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --wheel-bg: #222;
-    --wheel-text: #fff;
-    --body-bg: #111;
-  }
-}
-```
-
-## Browser Support
-
-- **Chrome/Edge**: 80+ (full feature support)
-- **Firefox**: 72+ (full feature support)
-- **Safari**: 13+ (full feature support)
-- **Mobile**: All modern mobile browsers
-- **Legacy**: Graceful degradation with reduced animations
-
-## Performance Optimizations
-
-### CSS Optimizations
-
-- **Organized CSS variables** grouped by category
-- **Hardware acceleration** with `translate3d()` transforms
-- **CSS containment** for optimized rendering
-- **Modern accessibility** support
-- **Responsive typography** using `clamp()`
-- **Theme utility classes** for easy switching
-
-### JavaScript Optimizations
-
-- **Comprehensive timeout management** with precise tracking
-- **Instance safety mechanisms** preventing memory leaks
-- **Flexible input handling** for strings and numbers
-- **Enhanced memory management** with automatic cleanup
-- **Type-safe interfaces** with JSDoc documentation
-- **Performance-optimized** 60fps animations
-
-### Early Completion Feature
-
-When `showSeconds` is false, the countdown completes 1 minute early to prevent displaying "00:00" for a full minute:
+The library uses performance-tuned constants:
 
 ```typescript
-// Countdown completes when Total < 60000ms (1 minute) if showSeconds is false
-// Countdown completes when Total < 0ms if showSeconds is true
-const shouldComplete = showSeconds ? totalMs < 0 : totalMs < 60000;
+const CONSTANTS = {
+  ANIMATION_DURATION: 600, // Default animation duration in ms
+  UPDATE_THROTTLE: 10, // Update loop throttling factor
+  INITIAL_DELAY: 500, // Initial delay before starting animations
+} as const;
 ```
 
 ## License
@@ -442,19 +479,21 @@ ISC License - see LICENSE file for details
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes with proper TypeScript types
-4. Ensure CSS follows the established custom property system
-5. Test across different browsers and accessibility settings
-6. Commit your changes (`git commit -m 'Add amazing feature'`)
-7. Push to the branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
+4. Ensure inline styling follows established patterns
+5. Test animations across different browsers
+6. Test animation cancellation and cleanup
+7. Commit your changes (`git commit -m 'Add amazing feature'`)
+8. Push to the branch (`git push origin feature/amazing-feature`)
+9. Open a Pull Request
 
 ### Development Guidelines
 
-- Use TypeScript for all new JavaScript code with comprehensive JSDoc
-- Follow the options-based constructor pattern for type safety
-- Follow established CSS custom property naming conventions
-- Ensure accessibility features are maintained
-- Include proper cleanup methods for memory management
-- Maintain compatibility with both ES modules and global browser usage
-- Test with various input formats (ISO strings, timestamps)
-- Verify timezone handling works correctly across different zones
+- **TypeScript First**: Use comprehensive TypeScript with JSDoc documentation
+- **CSS-Free**: All styling must be handled via inline styles in TypeScript
+- **Animation Safety**: Always use requestAnimationFrame with proper cancellation
+- **Memory Safety**: Ensure proper cleanup in all destroy methods
+- **Performance**: Use hardware-accelerated transforms for animations
+- **Accessibility**: Maintain screen reader compatibility
+- **Cross-browser**: Test across modern browsers for compatibility
+- **Input Validation**: Validate all user inputs with proper error handling
+- **State Management**: Use private properties with public getters for controlled access

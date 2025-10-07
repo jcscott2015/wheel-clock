@@ -1,39 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wheel Clock</title>
+    <link rel="stylesheet" href="./index.css" />
+  </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wheel Clock</title>
-  <link rel="stylesheet" href="wheel-clock.css" />
-</head>
+  <body>
+    <script type="module">
+      import { Clock } from "./dist/index.esm.min.js";
 
-<body>
-  <script type="module">
-    import { Clock } from './dist/wheel-clock.js';
+      // Demo instantiation
+      // Countdown example
+      const deadline = new Date(Date.now() + 12 * 24 * 60 * 60 * 1000);
+      const countdown = new Clock({
+        countdown: deadline.toString(),
+        callback: () => alert("Countdown complete!"),
+      });
+      document.body.appendChild(countdown.el);
 
-    // Demo instantiation
-    // Countdown example
-    const deadline = new Date(Date.now() + 12 * 24 * 60 * 60 * 1000);
-    const countdown = new Clock({
-      countdown: deadline.toString(),
-      callback: () => alert("Countdown complete!"),
-      showSeconds: true,
-    });
-    document.body.appendChild(countdown.el);
+      // 24-hour clock
+      const clock24 = new Clock({
+        showSeconds: true,
+        slotLabels: { Hours: "Hrs", Minutes: "Mins", Seconds: "Secs" },
+      });
+      document.body.appendChild(clock24.el);
 
-    // 24-hour clock
-    const clock24 = new Clock({ showSeconds: true, slotLabels: { Hours: "Hrs", Minutes: "Mins", Seconds: "Secs" } });
-    document.body.appendChild(clock24.el);
+      // 12-hour clock
+      const clock12 = new Clock({ twelveHour: true });
+      document.body.appendChild(clock12.el);
 
-    // 12-hour clock
-    const clock12 = new Clock({ twelveHour: true });
-    document.body.appendChild(clock12.el);
-
-    // Clock without seconds
-    const clockNoSeconds = new Clock();
-    document.body.appendChild(clockNoSeconds.el);
-  </script>
-</body>
-
+      // Clock without seconds
+      const clockNoSeconds = new Clock();
+      document.body.appendChild(clockNoSeconds.el);
+    </script>
+  </body>
 </html>

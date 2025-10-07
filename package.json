@@ -2,18 +2,35 @@
   "name": "wheel-clock",
   "version": "1.0.0",
   "description": "An optimized wheel-based clock and countdown timer library",
-  "main": "dist/wheel-clock.js",
-  "module": "dist/wheel-clock.js",
-  "types": "dist/wheel-clock.d.ts",
-  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.esm.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.min.js",
+      "require": "./dist/index.min.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
-    "build": "npx tsc",
-    "dev": "npx tsc --watch",
-    "serve": "python3 -m http.server 8000"
+    "clean": "rm -rf dist",
+    "build": "npm run clean && npm run build:ts && npm run build:bundles && npm run build:minify",
+    "build:ts": "tsc",
+    "build:bundles": "npm run build:esm && npm run build:cjs",
+    "build:esm": "esbuild index.ts --bundle --outfile=dist/index.esm.js --format=esm --target=es2020 --external:none",
+    "build:cjs": "esbuild index.ts --bundle --outfile=dist/index.js --format=cjs --target=es2020 --external:none",
+    "build:minify": "npm run minify:esm && npm run minify:cjs",
+    "minify:esm": "terser dist/index.esm.js -o dist/index.esm.min.js --compress --mangle --source-map --module",
+    "minify:cjs": "terser dist/index.js -o dist/index.min.js --compress --mangle --source-map",
+    "dev": "tsc --watch",
+    "serve": "python3 -m http.server 8000",
+    "analyze": "terser dist/index.js --compress --mangle --output /dev/null --verbose",
+    "size": "npm run build && ls -lh dist/",
+    "prepublishOnly": "npm run build"
   },
   "files": [
-    "dist/**/*",
-    "wheel-clock.css",
+    "dist/",
+    "README.md",
     "index.html"
   ],
   "keywords": [
@@ -22,11 +39,15 @@
     "timer",
     "wheel",
     "animation",
-    "typescript"
+    "typescript",
+    "minified",
+    "optimized"
   ],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "typescript": "^5.9.2"
+  "author": "Capital Group",
+  "license": "©2025 Capital Group. All rights reserved.",
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "terser": "^5.24.0",
+    "esbuild": "^0.19.8"
   }
 }
